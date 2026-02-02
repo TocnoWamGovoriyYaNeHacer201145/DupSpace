@@ -30,6 +30,9 @@ class DupSpace_VM():
             '>ret': self.to_ret_stack, 
             'ret>': self.from_ret_stack, 
             'ret@': self.latest_ret_stack,
+            'stk+': self.stack_add, 'stk-': self.stack_sub,
+            'stk*': self.stack_mul, 'stk/': self.stack_div,
+            'stk%': self.stack_mod,
             # ---------------------------------- MAIN
             'set': self._set,
             'namespace': self._namespace,
@@ -70,13 +73,13 @@ class DupSpace_VM():
         if len(self.cur_namespace['stack']) >= 1:
             return self.cur_namespace['stack'].pop()
         else:
-            self._warn('StackOperationWarning','Cannot do operation "op", stack is empty.')
+            self._warn('StackOperationWarning','Unable to perform operation "pop", stack is empty.')
 
     def _dup(self):
         if len(self.cur_namespace['stack']) >= 1:
             return self.cur_namespace['stack'].append(self.cur_namespace['stack'][-1])
         else:
-            self._warn('StackOperationWarning','Cannot do operation "dup", stack is empty.')
+            self._warn('StackOperationWarning','Unable to perform operation "dup", stack is empty.')
 
     def _swap(self):
         if len(self.cur_namespace['stack']) >= 2:
@@ -85,19 +88,19 @@ class DupSpace_VM():
             self.cur_namespace['stack'].append(a)
             self.cur_namespace['stack'].append(b)
         else:
-            self._warn('StackOperationWarning','Cannot do operation "swap", stack is empty.')
+            self._warn('StackOperationWarning','Unable to perform operation "swap", stack is empty.')
 
     def _over(self):
         if len(self.cur_namespace['stack']) >= 2:
             self.cur_namespace['stack'].append(self.cur_namespace['stack'][-2])
         else:
-            self._warn('StackOperationWarning','Cannot do operation "over", stack is empty.')
+            self._warn('StackOperationWarning','Unable to perform operation "over", stack is empty.')
 
     def _drop(self):
         if len(self.cur_namespace['stack']) >= 1:
             self.cur_namespace['stack'].pop()
         else:
-            self._warn('StackOperationWarning','Cannot do operation "drop", stack is empty.')
+            self._warn('StackOperationWarning','Unable to perform operation "drop", stack is empty.')
 
     def _depth(self):
         self.cur_namespace['stack'].append(len(self.cur_namespace['stack']))
@@ -109,19 +112,63 @@ class DupSpace_VM():
         if len(self.cur_namespace['stack']) >= 1:
             self.cur_namespace['ret_stack'].append(self.cur_namespace['stack'].pop())
         else:
-            self._warn('StackOperationWarning','Cannot transfer object from stack to return stack, stack is empty.')
+            self._warn('StackOperationWarning','Unable to transfer the last object from the stack to the return stack: the stack is empty.')
 
     def from_ret_stack(self):
         if len(self.cur_namespace['ret_stack']) >= 1:
             self.cur_namespace['stack'].append(self.cur_namespace['ret_stack'].pop())
         else:
-            self._warn('StackOperationWarning','Cannot transfer object from return stack, stack is empty.')
+            self._warn('StackOperationWarning','Unable to transfer the last object from the return stack to the stack: the return stack is empty.')
 
     def latest_ret_stack(self):
         if len(self.cur_namespace['ret_stack']) >= 1:
             self.cur_namespace['stack'].append(self.cur_namespace['ret_stack'][-1])
         else:
-            self._warn('StackOperationWarning','Cannot copy latest object from return stack to stack, return stack is empty.')
+            self._warn('StackOperationWarning','Unable to copy the last object from the return stack to the stack: the return stack is empty.')
+
+    def stack_add(self):
+        if len(self.cur_namespace['stack']) >= 2:
+            b = self.cur_namespace['stack'].pop()
+            a = self.cur_namespace['stack'].pop()
+            self.cur_namespace['stack'].append(a + b)
+        else:
+            self._warn('StackOperationWarning','Unable to perform operation "stack_add", stack is empty.')
+
+    def stack_sub(self):
+        if len(self.cur_namespace['stack']) >= 2:
+            b = self.cur_namespace['stack'].pop()
+            a = self.cur_namespace['stack'].pop()
+            self.cur_namespace['stack'].append(a - b)
+        else:
+            self._warn('StackOperationWarning','Unable to perform operation "stack_sub", stack is empty.')
+
+    def stack_mul(self):
+        if len(self.cur_namespace['stack']) >= 2:
+            b = self.cur_namespace['stack'].pop()
+            a = self.cur_namespace['stack'].pop()
+            self.cur_namespace['stack'].append(a * b)
+        else:
+            self._warn('StackOperationWarning','Unable to perform operation "stack_mul", stack is empty.')
+
+    def stack_div(self):
+        if len(self.cur_namespace['stack']) >= 2:
+            b = self.cur_namespace['stack'].pop()
+            if b == 0:
+                self._warn('StackOperationWarning', "Unable to divide by zero.")
+            a = self.cur_namespace['stack'].pop()
+            self.cur_namespace['stack'].append(a / b)
+        else:
+            self._warn('StackOperationWarning','Unable to perform operation "stack_div", stack is empty.')
+
+    def stack_mod(self):
+        if len(self.cur_namespace['stack']) >= 2:
+            b = self.cur_namespace['stack'].pop()
+            if b == 0:
+                self._warn('StackOperationWarning', "Unable to mod by zero.")
+            a = self.cur_namespace['stack'].pop()
+            self.cur_namespace['stack'].append(a % b)
+        else:
+            self._warn('StackOperationWarning','Unable to perform operation "stack_mod", stack is empty.')
 
     def _split(self, *args):
         if isinstance(args[0], list):
