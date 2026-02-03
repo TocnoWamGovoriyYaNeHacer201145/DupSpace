@@ -27,12 +27,12 @@ class DupSpace_VM():
             'dup': self._dup, 'swap': self._swap,
             'over': self._over, 'drop': self._drop,
             'depth': self._depth, 'clear': self._clear,
-            '>ret': self.to_ret_stack, 
-            'ret>': self.from_ret_stack, 
-            'ret@': self.latest_ret_stack,
-            'stk+': self.stack_add, 'stk-': self.stack_sub,
-            'stk*': self.stack_mul, 'stk/': self.stack_div,
-            'stk%': self.stack_mod,
+            '>ret': self._to_ret_stack, 
+            'ret>': self._from_ret_stack, 
+            'ret@': self._latest_ret_stack,
+            'stk+': self._stack_add, 'stk-': self._stack_sub,
+            'stk*': self._stack_mul, 'stk/': self._stack_div,
+            'stk%': self._stack_mod,
             # ---------------------------------- MAIN
             'set': self._set,
             'namespace': self._namespace,
@@ -66,6 +66,7 @@ class DupSpace_VM():
         self.errors = {
             'EmptyStackError',
         }
+
     def _push(self, *args):
         self.cur_namespace['stack'].append(*args)
 
@@ -108,25 +109,25 @@ class DupSpace_VM():
     def _clear(self):
         self.cur_namespace['stack'].clear()
     
-    def to_ret_stack(self):
+    def _to_ret_stack(self):
         if len(self.cur_namespace['stack']) >= 1:
             self.cur_namespace['ret_stack'].append(self.cur_namespace['stack'].pop())
         else:
             self._warn('StackOperationWarning','Unable to transfer the last object from the stack to the return stack: the stack is empty.')
 
-    def from_ret_stack(self):
+    def _from_ret_stack(self):
         if len(self.cur_namespace['ret_stack']) >= 1:
             self.cur_namespace['stack'].append(self.cur_namespace['ret_stack'].pop())
         else:
             self._warn('StackOperationWarning','Unable to transfer the last object from the return stack to the stack: the return stack is empty.')
 
-    def latest_ret_stack(self):
+    def _latest_ret_stack(self):
         if len(self.cur_namespace['ret_stack']) >= 1:
             self.cur_namespace['stack'].append(self.cur_namespace['ret_stack'][-1])
         else:
             self._warn('StackOperationWarning','Unable to copy the last object from the return stack to the stack: the return stack is empty.')
 
-    def stack_add(self):
+    def _stack_add(self):
         if len(self.cur_namespace['stack']) >= 2:
             b = self.cur_namespace['stack'].pop()
             a = self.cur_namespace['stack'].pop()
@@ -134,7 +135,7 @@ class DupSpace_VM():
         else:
             self._warn('StackOperationWarning','Unable to perform operation "stack_add", stack is empty.')
 
-    def stack_sub(self):
+    def _stack_sub(self):
         if len(self.cur_namespace['stack']) >= 2:
             b = self.cur_namespace['stack'].pop()
             a = self.cur_namespace['stack'].pop()
@@ -142,7 +143,7 @@ class DupSpace_VM():
         else:
             self._warn('StackOperationWarning','Unable to perform operation "stack_sub", stack is empty.')
 
-    def stack_mul(self):
+    def _stack_mul(self):
         if len(self.cur_namespace['stack']) >= 2:
             b = self.cur_namespace['stack'].pop()
             a = self.cur_namespace['stack'].pop()
@@ -150,7 +151,7 @@ class DupSpace_VM():
         else:
             self._warn('StackOperationWarning','Unable to perform operation "stack_mul", stack is empty.')
 
-    def stack_div(self):
+    def _stack_div(self):
         if len(self.cur_namespace['stack']) >= 2:
             b = self.cur_namespace['stack'].pop()
             if b == 0:
@@ -160,7 +161,7 @@ class DupSpace_VM():
         else:
             self._warn('StackOperationWarning','Unable to perform operation "stack_div", stack is empty.')
 
-    def stack_mod(self):
+    def _stack_mod(self):
         if len(self.cur_namespace['stack']) >= 2:
             b = self.cur_namespace['stack'].pop()
             if b == 0:
@@ -171,7 +172,7 @@ class DupSpace_VM():
             self._warn('StackOperationWarning','Unable to perform operation "stack_mod", stack is empty.')
 
     def _split(self, *args):
-        if isinstance(args[0], list):
+        if isinstance(args[0], str):
             return args[0].split()
 
     def _set(self, *args):
@@ -228,7 +229,8 @@ class DupSpace_VM():
             if condition:
                 return self.execute(expr[2])
             else:
-                return self.execute(expr[3])
+                if len(expr) >= 3:
+                    return self.execute(expr[3])
         # ---------------------------------------------------------------------------------------------- DEF
         elif op_ == 'def':
             name = expr[1]
@@ -253,7 +255,15 @@ class DupSpace_VM():
                 if expr_ == False: break
                 self.execute(body)
             return None
-
+        # ---------------------------------------------------------------------------------------------- TRY
+        elif op_ == 'try':
+            try:
+                self.execute(expr[1])
+            except:
+                if len(expr) >= 2:
+                    self.execute(expr[2])
+            return None
+        # ----------------------------------------------------------------------------------------------
         content_ = [self.execute(arg) for arg in expr[1:]]
         if op_ in self.funs:
             return self.funs[op_](*content_)
