@@ -55,7 +55,7 @@ class DupSpace_VM():
             'cons': lambda x, y: [x] + y,
             'eval': self.execute,
             'apply': lambda f, args: f(*args) if callable(f) else self.execute([f] + args),
-            # ---------------------------------- text interaction
+            # ---------------------------------- text operations
             'split': self._split,
             'upper': self._upper,
             'lower': self._lower,
