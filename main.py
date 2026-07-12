@@ -18,21 +18,23 @@ class DupSpace_VM():
             # ---------------------------------- Operations
             '+': op.add, '-': op.sub,
             '*': op.mul, '/': op.truediv,
+            '%': op.mod,
             '<': op.lt, '>': op.gt,
             '>=': op.ge, '<=': op.le, 
             '=': op.eq, 'eq?': op.is_,
             ';': lambda *args: None,
             # ---------------------------------- Stack operations
-            'stk_push': self._push, 'stk_pop': self._pop,
-            'stk_dup': self._dup, 'stk_swap': self._swap,
-            'stk_over': self._over, 'stk_drop': self._drop,
-            'stk_depth': self._depth, 'stk_clear': self._clear,
-            '>ret': self._ret_stack_add, 
-            'ret>': self._ret_stack_pop, 
-            'ret@': self._ret_stack_latest,
-            'stk+': self._stack_add, 'stk-': self._stack_sub,
-            'stk*': self._stack_mul, 'stk/': self._stack_div,
-            'stk%': self._stack_mod,
+            'spush': self._push, 'spop': self._pop,
+            'sdup': self._dup, 'sswap': self._swap,
+            'sover': self._over, 'sdrop': self._drop,
+            'sdepth': self._depth, 'sclear': self._clear,
+            '>r': self._ret_stack_add, 
+            'r>': self._ret_stack_pop, 
+            'r@': self._ret_stack_latest,
+            's+': self._stack_add, 's-': self._stack_sub,
+            's*': self._stack_mul, 's/': self._stack_div,
+            's%': self._stack_mod,
+            '.s': lambda: print(self.cur_namespace['stack']),
             # ---------------------------------- features
             'set': self._set,
             'namespace': self._namespace,
@@ -159,6 +161,8 @@ class DupSpace_VM():
             b = self.cur_namespace['stack'].pop()
             if b == 0:
                 self._warn('StackOperationWarning', "Unable to divide by zero.")
+                self._push(b)
+                return
             a = self.cur_namespace['stack'].pop()
             self.cur_namespace['stack'].append(a / b)
         else:
@@ -169,6 +173,8 @@ class DupSpace_VM():
             b = self.cur_namespace['stack'].pop()
             if b == 0:
                 self._warn('StackOperationWarning', "Unable to mod by zero.")
+                self._push(b)
+                return
             a = self.cur_namespace['stack'].pop()
             self.cur_namespace['stack'].append(a % b)
         else:
@@ -205,7 +211,7 @@ class DupSpace_VM():
 
     def _warn(self, *args):
         if args[0] in self.warns:
-            print(f'{args[0]}: {args[1]}')
+            print(f'\033[93m{args[0]}: {args[1]}\033[0m')
 
     def _raise(self, *args):
         if args[0] in self.errors:
