@@ -23,6 +23,8 @@ class DupSpace_VM():
             '>=': op.ge, '<=': op.le, 
             '=': op.eq, 'eq?': op.is_,
             ';': lambda *args: None,
+            '++': self._plusplus,
+            '--': self._minusminus,
             # ---------------------------------- Stack operations
             'spush': self._push, 'spop': self._pop,
             'sdup': self._dup, 'sswap': self._swap,
@@ -71,6 +73,12 @@ class DupSpace_VM():
         self.errors = {
             'EmptyStackError',
         }
+
+    def _plusplus(self, *args):
+        self.cur_namespace['vars'][args[0]] += 1
+
+    def _minusminus(self, *args):
+        self.cur_namespace['vars'][args[0]] -= 1
 
     def _push(self, *args):
         self.cur_namespace['stack'].append(*args)
@@ -265,12 +273,11 @@ class DupSpace_VM():
             return None
         # ----------------------------------- WHILE
         elif op_ == 'while':
-            expr_ = self.execute(expr[1])
-            body = expr[2]
-            while expr_:
-                expr_ = self.execute(expr[1])
-                if expr_ == False: break
-                self.execute(body)
+            while True:
+                condition = self.execute(expr[1])
+                if not condition: 
+                    break
+                self.execute(expr[2])
             return None
         # ----------------------------------- TRY
         elif op_ == 'try':
