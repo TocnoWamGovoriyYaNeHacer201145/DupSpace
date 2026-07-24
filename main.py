@@ -40,9 +40,9 @@ class DupSpace_VM():
             # ---------------------------------- features
             'set': self._set,
             'namespace': self._namespace,
-            # ---------------------------------- io
+            # ---------------------------------- IO
             'print': print, 'input': input,
-            # ---------------------------------- types
+            # ---------------------------------- Types
             'is_int?': lambda x: isinstance(x, int),
             'is_str?': lambda x: isinstance(x, str),
             'is_float?': lambda x: isinstance(x, float),
@@ -50,7 +50,7 @@ class DupSpace_VM():
             'is_null?': lambda x: x == [],
             'to_int': int, 'to_str': str,
             'to_float': float, 'to_bool': bool,
-            # ---------------------------------- functions
+            # ---------------------------------- Functions
             'len': len, 'map': map,
             'min': min, 'max': max,
             'begin': lambda *x: x[-1],
@@ -59,11 +59,19 @@ class DupSpace_VM():
             'cons': lambda x, y: [x] + y,
             'eval': self.execute,
             'apply': lambda f, args: f(*args) if callable(f) else self.execute([f] + args),
-            # ---------------------------------- text operations
+            # ---------------------------------- Text operations
             'split': self._split,
+            'join': self._join,
             'upper': self._upper,
             'lower': self._lower,
-            # ---------------------------------- errors
+            # ---------------------------------- List
+            'list': self._list,
+            'lget': self._lget,
+            'lset': self._lset,
+            'ladd': self._ladd,
+            'lpop': self._lpop,
+            'lempty': lambda args: [],
+            # ---------------------------------- Errors
             'warn': self._warn,
             'raise': self._raise,
         }
@@ -191,6 +199,9 @@ class DupSpace_VM():
     def _split(self, *args):
         if isinstance(args[0], str):
             return args[0].split()
+
+    def _join(self, *args):
+        return args[0].join(args[1:][0])
         
     def _upper(self, *args):
         if isinstance(args[0], str):
@@ -216,6 +227,23 @@ class DupSpace_VM():
                 'funs': {},
             }
             self.cur_namespace = self.namespaces[arg]
+
+    def _list(self, *args):
+        return list(args)
+
+    def _lget(self, *args):
+        return args[1][args[0]]
+
+    def _lset(self, *args):
+        args[2][args[0]] = args[1]
+        return args[2]
+
+    def _ladd(self, *args):
+        args[1].append(args[0])
+        return args[1]
+
+    def _lpop(self, *args):
+        return args[0].pop()
 
     def _warn(self, *args):
         if args[0] in self.warns:
@@ -267,9 +295,8 @@ class DupSpace_VM():
         # ----------------------------------- REPEAT
         elif op_ == 'repeat':
             value = self.execute(expr[1])
-            body = expr[2]
             for _ in range(value):
-                self.execute(body)
+                self.execute(expr[2])
             return None
         # ----------------------------------- WHILE
         elif op_ == 'while':
@@ -283,7 +310,7 @@ class DupSpace_VM():
         elif op_ == 'try':
             try:
                 self.execute(expr[1])
-            except:
+            except Exception:
                 if len(expr) >= 2:
                     self.execute(expr[2])
             return None
@@ -316,9 +343,19 @@ def read_from_toks(tokens):
 # -----------------------------------
 
 if __name__ == '__main__':
-    with open(sys.argv[1], 'r', encoding='utf-8') as f:
-        program = f.read()
-    tokens = program.replace('(', ' ( ').replace(')',' ) ').split()
-    vm = DupSpace_VM()
-    while tokens:
-        vm.execute(read_from_toks(tokens))
+    if len(sys.argv) >= 2:
+        with open(sys.argv[1], 'r', encoding='utf-8') as f:
+            program = f.read()
+        tokens = program.replace('(', ' ( ').replace(')',' ) ').split()
+        vm = DupSpace_VM()
+        while tokens:
+            vm.execute(read_from_toks(tokens))
+    else:
+        vm = DupSpace_VM()
+        print('DupSpace REPL (Enter "bye" to exit)')
+        while True:
+            inp = input('> ')
+            if inp == 'bye':
+                break
+            tokens = inp.replace('(', ' ( ').replace(')',' ) ').split()
+            vm.execute(read_from_toks(tokens))
