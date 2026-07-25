@@ -59,6 +59,10 @@ class DupSpace_VM():
             'cons': lambda x, y: [x] + y,
             'eval': self.execute,
             'apply': lambda f, args: f(*args) if callable(f) else self.execute([f] + args),
+            'iset': self._iset,
+            'iget': self._iget,
+            'ihas': self._ihas,
+            'del': self._del,
             # ---------------------------------- Text operations
             'split': self._split,
             'join': self._join,
@@ -66,11 +70,11 @@ class DupSpace_VM():
             'lower': self._lower,
             # ---------------------------------- List
             'list': self._list,
-            'lget': self._lget,
-            'lset': self._lset,
             'ladd': self._ladd,
             'lpop': self._lpop,
             'lempty': lambda args: [],
+            # ---------------------------------- Dict
+            'dict': lambda: dict(),
             # ---------------------------------- Errors
             'warn': self._warn,
             'raise': self._raise,
@@ -196,12 +200,35 @@ class DupSpace_VM():
         else:
             self._warn('StackOperationWarning','Unable to perform operation "stack_mod", stack is empty.')
 
+    def _iget(self, *args):
+        return args[1][args[0]]
+
+    def _iset(self, *args):
+        args[2][args[0]] = args[1]
+        return args[2]
+
+    def _ihas(self, *args):
+        if args[0] in args[1]:
+            return True
+        return False
+
+    def _del(self, *args):
+        if isinstance(args[1], list):
+            args[1].remove(args[0])
+        elif isinstance(args[1], dict):
+            del args[1][args[0]]
+        else:
+            del self.cur_namespace[args[0]]
+        return args[1]
+
     def _split(self, *args):
         if isinstance(args[0], str):
             return args[0].split()
 
     def _join(self, *args):
-        return args[0].join(args[1:][0])
+        if args[0] == 'space':
+            return ' '.join(args[1:])
+        return args[0].join(args[1:])
         
     def _upper(self, *args):
         if isinstance(args[0], str):
@@ -230,13 +257,6 @@ class DupSpace_VM():
 
     def _list(self, *args):
         return list(args)
-
-    def _lget(self, *args):
-        return args[1][args[0]]
-
-    def _lset(self, *args):
-        args[2][args[0]] = args[1]
-        return args[2]
 
     def _ladd(self, *args):
         args[1].append(args[0])
@@ -282,8 +302,10 @@ class DupSpace_VM():
             if condition:
                 return self.execute(expr[2])
             else:
-                if len(expr) >= 3:
+                if len(expr) >= 4:
                     return self.execute(expr[3])
+                else:
+                    return None
         # ------------------------------------ DEF
         elif op_ == 'def':
             name = expr[1]
@@ -311,7 +333,7 @@ class DupSpace_VM():
             try:
                 self.execute(expr[1])
             except Exception:
-                if len(expr) >= 2:
+                if len(expr) >= 3:
                     self.execute(expr[2])
             return None
         # -----------------------------------
